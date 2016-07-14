@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>K-means</title>
+    <script type="text/javascript" src="d3.min.js"></script>
+    <script type="text/javascript" src="Autonomous_km.js"></script>
+    <style type="text/css">
+    </style>
+  </head>
+  <body>
+ 
+  	<script type="text/javascript">
+
+        // setup()
+
+        // var vec = new Vector()
+        // console.log('vector: ', vec)
+
+        var w = 1400
+        var h = 800
+                
+        var svg = d3.select("body").append("svg").attr("width", w).attr("height", h);
+
+        // end setup()
+        
+        var num_centroids = 3;
+        var num_data_points = 100;
+
+
+
+
+
+function get_means(data_points)
+{
+    var red_sum = new Vector(0, 0);
+    var green_sum = new Vector(0, 0);
+    var blue_sum = new Vector(0, 0);
+
+    var red_count  = 0;
+    var green_count  = 0;
+    var blue_count  = 0;
+
+    var distance_from_red = 10000;
+    var distance_from_green = 10000;
+    var distance_from_blue = 10000;
+
+    var means = {"red": [0,0], "green": [0,0], "blue": [0,0]};
+
+
+    var closet_centroid = null;
+
+
+    for(var i = 0; i < data_points.length - num_centroids; i++)
+    {
+
+          distance_from_red = Vector.distance(data_points[i].location, data_points[data_points.length - 3].location)
+          distance_from_green = Vector.distance(data_points[i].location, data_points[data_points.length - 2].location)
+          distance_from_blue = Vector.distance(data_points[i].location, data_points[data_points.length - 1].location)
+
+          
+
+          if( distance_from_red < distance_from_green)
+          {
+                if(distance_from_red < distance_from_blue)
+                {
+                   closest_centroid = "red";
+                   data_points[i].color = "red"
+                   red_count++;
+                }
+                else
+                {
+                   closest_centroid = "blue";
+                   data_points[i].color = "blue";
+                   blue_count++;
+                }
+
+          }
+          else
+          {
+                if(distance_from_green < distance_from_blue)
+                {
+                   closest_centroid = "green";
+                   data_points[i].color = "green";
+                   green_count++;
+                }
+                else
+                {
+                   closest_centroid = "blue";
+                   data_points[i].color = "blue";
+                   blue_count++;
+                }
+          }
+
+
+
+          if(closest_centroid == "red")
+          {
+              red_sum.add(data_points[i].location);
+          }
+          else if(closest_centroid == "green")
+          {
+              green_sum.add(data_points[i].location);
+          }
+          else
+          {
+              blue_sum.add(data_points[i].location);
+          }
+
+
+    }  // end for loop
+
+
+    if(red_count > 0)
+    {
+        red_sum.divide(red_count)
+    }
+    if(green_count > 0)
+    {
+        green_sum.divide(green_count);
+    }
+    if(blue_count > 0)
+    {
+        blue_sum.divide(blue_count);
+    }
+
+
+    means["red"] = red_sum;
+    means["green"] = green_sum;
+    means["blue"] = blue_sum;
+           
+        
+
+
+    return means;
+}  // end get_means()
+
+
+
+
+
+
+ 
+var the_data = [];  // the dataset
+
+      // get the mouse position coordinates
+      var coordinates = [100, 100];
+      //coordinates = d3.mouse(this);   // use the mouse coordinates
+
+      for(i=0; i < num_data_points; i++)
+      {
+
+      coordinates = getRandomLocation(w, h);   // use random coordinates\
+
+      the_data.push(new Mover(12, "lightgray", coordinates, false, "black", 1));
+
+      }
+      
+
+var circles = svg.selectAll("circle") //Select all circles
+                  .data(the_data);
+
+      
+circles.enter()
+        .append("circle")
+        .attr({cx: function(d){return d.location.x}, cy: function(d){return d.location.y}, fill: function(d){return d.color}, stroke: function(d){return d.stroke_color}, "stroke-width": function(d){return d.stroke_width}})  // could also set fill to d.color to use the Runner's instantiated color
+        .attr("r", function(d){return d.r});
+
+
+
+ var click_count = 0;
+ var centroid_location = [[200,400], [650, 650], [1050, 150]];
+ var centroid_colors = ["red", "green", "blue"];
+ var means = {};
+
+
+d3.select("svg").on("click", function()
+{
+ 
+      if(click_count == 0)  // present centroids
+      {
+         for(i=0; i < num_centroids; i++)
+         {
+            // the array centroid_location[i] above can be used for fixed centroid placement as opposed to calling getRandomLocation()
+            centroid_location = getRandomLocation(w, h);
+            the_data.push(new Mover(14, centroid_colors[i], centroid_location, true, "black", 4));
+         }
+
+        var circles = svg.selectAll("circle") //Select all circles
+                  .data(the_data);
+
+        circles.enter()
+        .append("circle")
+        .attr({cx: function(d){return d.location.x}, cy: function(d){return d.location.y}, fill: function(d){return d.color}, stroke: function(d){return d.stroke_color}, "stroke-width": function(d){return d.stroke_width}})  // could also set fill to d.color to use the Runner's instantiated color
+        //  , stroke:"black", "stroke-width":4
+        .attr("r", function(d){return d.r}); 
+
+
+      }
+
+
+
+      if((click_count !=0) && (click_count% 2 == 1) )  // odd numbered clicks gets means
+      {console.log("odd clcik");
+        var circles = svg.selectAll("circle") //Select all circles
+                  .data(the_data);
+
+                  circles.transition()
+            .duration(2000).attr({fill:function(d)
+                                            { 
+                                                means = get_means(the_data);
+                                                
+                                                return d.color;
+                                                
+                                            }});
+
+      }
+
+
+      if((click_count !=0) &&  (click_count% 2 == 0) ) // even numbered clicks (excluding 0) moves centroids
+      {console.log("even clcik");
+        var circles = svg.selectAll("circle") //Select all circles
+                  .data(the_data);
+
+                  circles.transition()
+            .duration(2000).attr({cx:function(d)
+                                            { 
+                                              if(d.centroid == true)
+                                                {
+                                                  if(d.color == "red")
+                                                    {
+
+                                                      the_data[the_data.length - 3].location.x = means["red"].x;
+                                                    }
+                                                    else if(d.color == "green")
+                                                      {
+                                                        the_data[the_data.length - 2].location.x = means["green"].x;
+                                                      }
+                                                    else
+                                                    {
+                                                      the_data[the_data.length - 1].location.x = means["blue"].x;
+                                                    } 
+                                                  return means[d.color].x;  
+                                                }
+                                                else
+                                                {
+                                                  return d.location.x;;
+                                                } 
+                                            },
+
+                                  cy:function(d)
+                                            { 
+                                              if(d.centroid == true)
+                                                {
+                                                  if(d.color == "red")
+                                                    {
+
+                                                      the_data[the_data.length - 3].location.y = means["red"].y;
+                                                    }
+                                                    else if(d.color == "green")
+                                                      {
+                                                        the_data[the_data.length - 2].location.y = means["green"].y;
+                                                      }
+                                                    else
+                                                    {
+                                                      the_data[the_data.length - 1].location.y = means["blue"].y;
+                                                    } 
+                                                  return means[d.color].y; 
+                                                }
+                                                else
+                                                {
+                                                  return d.location.y;
+                                                }  
+                                            }
+
+                                          });
+
+      }  // end if
+
+
+  click_count = click_count + 1;
+
+});
+  
+
+  	</script>
+
+
+  </body>
+</html>
